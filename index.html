@@ -25,8 +25,62 @@
         <div id="btn-up" class="touch-btn action">Jump</div>
     </div>
 </div>
+<button id="fs-toggle" style="position:fixed; bottom:5px; right:5px; z-index:9999; padding:5px 8px; background:rgba(0,0,0,0.6); color:#fff; border:1px solid #aaa; border-radius: 4px; font-family:sans-serif; font-size:10px; cursor:pointer;">⛶ FULLSCREEN</button>
 </div>
-<iframe width="0" height="0" src="https://www.youtube.com/embed/SB1VqLCTFpA?rel=0&autoplay=1" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<audio id="bg-music" loop>
+    <source src="Content/audio/overworld.wav" type="audio/mpeg">
+    Your browser does not support the audio element.
+</audio>
+<div id="sfx-container" style="display:none;">
+    <audio id="sfx-jump" src="audio/jump.wav"></audio>
+    <audio id="sfx-coin" src="audio/coin.wav"></audio>
+    <audio id="sfx-gameover" src="audio/gameover.wav"></audio>
+    <audio id="sfx-kick" src="audio/kick.wav"></audio>
+    <audio id="sfx-die" src="audio/die.wav"></audio>
+</div>
+
+<script>
+    // Sound Helper Function
+    var sounds = {
+        play: function(id) {
+            var sound = document.getElementById('sfx-' + id);
+            if (sound) {
+                sound.pause();
+                sound.currentTime = 0; // Rewind track to start (allows rapid playing)
+                sound.play().catch(function(e){ /* Ignore auto-play errors */ });
+            }
+        }
+    };
+</script>
+<script>
+    // This script waits for the first user interaction to start audio
+    // This fixes the "Autoplay Policy" issues on Chrome and Mobile
+    var music = document.getElementById('bg-music');
+    var audioStarted = false;
+
+    function startAudio() {
+        if (!audioStarted) {
+            // Try to play the music
+            music.volume = 0.5; // Set volume to 50%
+            music.play().then(function() {
+                console.log("Audio started successfully");
+                audioStarted = true;
+                
+                // Remove the listeners so this only runs once
+                document.removeEventListener('keydown', startAudio);
+                document.removeEventListener('touchstart', startAudio);
+                document.removeEventListener('click', startAudio);
+            }).catch(function(error) {
+                console.log("Audio play failed (will try again on next input):", error);
+            });
+        }
+    }
+
+    // Listen for any key, click, or touch to start the music
+    document.addEventListener('keydown', startAudio);
+    document.addEventListener('touchstart', startAudio);
+    document.addEventListener('click', startAudio);
+</script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 <script>window.jQuery || document.write('<script src="Scripts/jQuery.js"><\/script>')</script>
 <script src="Scripts/testlevels.js"></script>
@@ -34,5 +88,52 @@
 <script src="Scripts/keys.js"></script>
 <script src="Scripts/constants.js"></script>
 <script src="Scripts/main.js"></script>
+<script>
+(function() {
+    var game = document.getElementById('game');
+    var baseWidth = 640;
+    var baseHeight = 480;
+
+    function resizeGame() {
+        var windowWidth = window.innerWidth;
+        var windowHeight = window.innerHeight;
+        
+        // Calculate the best scale to fit the screen
+        var scaleX = windowWidth / baseWidth;
+        var scaleY = windowHeight / baseHeight;
+        var scale = Math.min(scaleX, scaleY);
+        
+        // Apply the scale
+        // We use translate(-50%, -50%) to keep it centered
+        game.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+    }
+
+    // Resize on load and whenever the window changes
+    window.addEventListener('resize', resizeGame);
+    window.addEventListener('load', resizeGame);
+    
+    // Initial call
+    resizeGame();
+
+    // Fullscreen Toggle Logic
+    var fsBtn = document.getElementById('fs-toggle');
+    fsBtn.addEventListener('click', function() {
+        var doc = window.document;
+        var docEl = doc.documentElement;
+
+        var requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+        var cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+        if(!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+            requestFullScreen.call(docEl);
+        } else {
+            cancelFullScreen.call(doc);
+        }
+        
+        // Force a resize calculation after a short delay to allow the browser to switch modes
+        setTimeout(resizeGame, 100);
+    });
+})();
+</script>
 </body>
 </html>
