@@ -9,9 +9,23 @@
    font-style: normal;
 }
 
+body {
+    background-color: #000; /* Black bars for cinema feel */
+    margin: 0;
+    overflow: hidden; /* Hide scrollbars */
+}
+
 #game {
-	height: 480px; width: 640px; position: absolute; left: 50%; top: 50%;
-	margin-left: -321px; margin-top: -241px; border: 1px solid #ccc; overflow: hidden;
+    width: 640px;
+    height: 480px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    /* We will handle the scaling via JavaScript, this just centers the origin */
+    transform: translate(-50%, -50%);
+    border: 1px solid #ccc;
+    overflow: hidden;
+    transform-origin: center center; /* Ensure it scales from the middle */
 }
 #world { 
 	margin: 0; padding: 0; height: 100%; width: 100%; position: absolute;
