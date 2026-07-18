@@ -14,15 +14,10 @@
 <div id="coin" class="gaugeSprite"></div>
 <div id="liveNumber" class="gauge">0</div>
 <div id="live" class="gaugeSprite"></div>
-<div id="mobile-controls">
-    <div class="d-pad">
-        <div id="btn-left" class="touch-btn">◀</div>
-        <div id="btn-right" class="touch-btn">▶</div>
-        <div id="btn-down" class="touch-btn">▼</div>
-    </div>
-    <div class="action-pad">
-        <div id="btn-run" class="touch-btn action">Run</div>
-        <div id="btn-up" class="touch-btn action">Jump</div>
+<div id="gamepad">
+    <div id="swipe-layer"></div>
+    <div class="action-buttons">
+        <div id="btn-fire" class="pad-btn action fire">FIRE</div>
     </div>
 </div>
 <button id="fs-toggle" style="position:fixed; bottom:5px; right:5px; z-index:9999; padding:5px 8px; background:rgba(0,0,0,0.6); color:#fff; border:1px solid #aaa; border-radius: 4px; font-family:sans-serif; font-size:10px; cursor:pointer;">⛶ FULLSCREEN</button>
@@ -111,6 +106,9 @@
     // Resize on load and whenever the window changes
     window.addEventListener('resize', resizeGame);
     window.addEventListener('load', resizeGame);
+    window.addEventListener('orientationchange', function() {
+        setTimeout(resizeGame, 100);
+    });
     
     // Initial call
     resizeGame();
