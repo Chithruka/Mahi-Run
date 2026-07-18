@@ -1,63 +1,3 @@
-﻿/*
- * *****
- * WRITTEN BY CHITHRUKA SRI YUDAM, 2023.
- * chithrukasri@gmail.com
- * *****
- */
- 
-var keys = {
-	bind : function() {
-		$(document).on('keydown', function(event) {	
-			return keys.handler(event, true);
-		});
-		$(document).on('keyup', function(event) {	
-			return keys.handler(event, false);
-		});
-	},
-	reset : function() {
-		keys.left = false;
-		keys.right = false;
-		keys.accelerate = false;
-		keys.up = false;
-		keys.down = false;
-	},
-	unbind : function() {
-		$(document).off('keydown');
-		$(document).off('keyup');
-	},
-	handler : function(event, status) {
-		switch(event.keyCode) {
-			case 57392://CTRL on MAC
-			case 17://CTRL
-			case 65://A
-				keys.accelerate = status;
-				break;
-			case 40://DOWN ARROW
-				keys.down = status;
-				break;
-			case 39://RIGHT ARROW
-				keys.right = status;
-				break;
-			case 37://LEFT ARROW
-				keys.left = status;			
-				break;
-			case 38://UP ARROW
-				keys.up = status;
-				break;
-			default:
-				return true;
-		}
-			
-		event.preventDefault();
-		return false;
-	},
-	accelerate : false,
-	left : false,
-	up : false,
-	right : false,
-	down : false,
-};
-
 /*
  * *****
  * WRITTEN BY CHITHRUKA SRI YUDAM, 2023.
@@ -75,38 +15,150 @@ var keys = {
 			return keys.handler(event, false);
 		});
 
-		// Touch Bindings (Added for Mobile)
-		keys.bindTouch('#btn-left', 'left');
-		keys.bindTouch('#btn-right', 'right');
-		keys.bindTouch('#btn-up', 'up');
-		keys.bindTouch('#btn-down', 'down');
-		keys.bindTouch('#btn-run', 'accelerate');
+		// Virtual gamepad bindings (mobile/touch)
+		keys.bindSwipes();
+		keys.bindButton('btn-fire', 'fire');
 	},
-	
-	// Helper to bind touch events to keys properties
-	bindTouch : function(selector, keyName) {
-		$(selector).on('touchstart mousedown', function(e) {
-			e.preventDefault(); // Prevent scrolling/zooming
+
+	// Binds one on-screen button to one keys.* flag using Pointer Events,
+	// which cover touch, mouse, and stylus in one go and support
+	// setPointerCapture so a dragging thumb doesn't lose the button.
+	bindButton : function(elId, keyName) {
+		var el = document.getElementById(elId);
+		if (!el) return;
+
+		el.addEventListener('pointerdown', function(e) {
+			e.preventDefault();
 			keys[keyName] = true;
+			if (el.setPointerCapture) {
+				try { el.setPointerCapture(e.pointerId); } catch (err) {}
+			}
 		});
-		$(selector).on('touchend mouseup mouseout', function(e) {
+		el.addEventListener('pointerup', function(e) {
 			e.preventDefault();
 			keys[keyName] = false;
 		});
+		el.addEventListener('pointercancel', function(e) {
+			keys[keyName] = false;
+		});
+		el.addEventListener('contextmenu', function(e) {
+			e.preventDefault();
+		});
+	},
+
+	// The 8-directional gesture wheel — now the sole movement control.
+	// Direction from the touch-down point picks one of 8 actions (see
+	// reference diagram): N=jump, NE/NW=jump+run, E/W=fast run, SE/SW=walk,
+	// S=sit. Unlike a one-shot swipe, this tracks the finger live the whole
+	// time it's down (like a joystick snapped to 8 fixed detents), so
+	// dragging into a new wedge switches actions and lifting the finger
+	// always returns to neutral. Jump only fires once per entry into its
+	// wedge so holding still there doesn't spam repeat jumps.
+	bindSwipes : function() {
+		var layer = document.getElementById('swipe-layer');
+		if (!layer) return;
+
+		var DEADZONE = 20; // px of wiggle near the touch-down point that stays neutral
+		var JUMP_PULSE_MS = 120;
+		var touches = {};
+
+		function jumpPulse() {
+			keys.up = true;
+			setTimeout(function() { keys.up = false; }, JUMP_PULSE_MS);
+		}
+
+		// Continuous key state for each wedge. N has none of its own since
+		// jump is a one-shot pulse, not a held key.
+		var WEDGE_FLAGS = {
+			NE : { right: true, accelerate: true },
+			NW : { left: true, accelerate: true },
+			E  : { right: true, accelerate: true },
+			W  : { left: true, accelerate: true },
+			SE : { right: true },
+			SW : { left: true },
+			S  : { down: true }
+		};
+		var JUMPS_ON_ENTRY = { N: true, NE: true, NW: true };
+
+		function applyWedge(sector) {
+			var flags = WEDGE_FLAGS[sector] || {};
+			keys.left = !!flags.left;
+			keys.right = !!flags.right;
+			keys.down = !!flags.down;
+			keys.accelerate = !!flags.accelerate;
+		}
+
+		function clearMovement() {
+			keys.left = false;
+			keys.right = false;
+			keys.down = false;
+			keys.accelerate = false;
+		}
+
+		// Buckets a drag vector into one of the 8 compass directions, or
+		// null if still within the deadzone. Screen y grows downward, so
+		// negative dy is "up".
+		function getSector(dx, dy) {
+			if (Math.sqrt(dx * dx + dy * dy) < DEADZONE) return null;
+			var angle = Math.atan2(dy, dx) * 180 / Math.PI; // -180..180, 0=E, 90=S, -90=N
+			if (angle >= -112.5 && angle < -67.5)  return 'N';
+			if (angle >= -67.5  && angle < -22.5)  return 'NE';
+			if (angle >= -22.5  && angle < 22.5)   return 'E';
+			if (angle >= 22.5   && angle < 67.5)   return 'SE';
+			if (angle >= 67.5   && angle < 112.5)  return 'S';
+			if (angle >= 112.5  && angle < 157.5)  return 'SW';
+			if (angle >= -157.5 && angle < -112.5) return 'NW';
+			return 'W'; // angle >= 157.5 || angle < -157.5
+		}
+
+		layer.addEventListener('pointerdown', function(e) {
+			e.preventDefault();
+			if (Object.keys(touches).length) return; // one active movement touch at a time
+			touches[e.pointerId] = { startX: e.clientX, startY: e.clientY, sector: null };
+			try { layer.setPointerCapture(e.pointerId); } catch (err) {}
+		});
+
+		layer.addEventListener('pointermove', function(e) {
+			var data = touches[e.pointerId];
+			if (!data) return;
+			e.preventDefault();
+
+			var dx = e.clientX - data.startX;
+			var dy = e.clientY - data.startY;
+			var sector = getSector(dx, dy);
+			if (sector === data.sector) return;
+
+			data.sector = sector;
+			if (sector === null) {
+				clearMovement();
+				return;
+			}
+
+			applyWedge(sector);
+			if (JUMPS_ON_ENTRY[sector]) jumpPulse();
+		});
+
+		function endSwipe(e) {
+			var data = touches[e.pointerId];
+			if (!data) return;
+			clearMovement();
+			delete touches[e.pointerId];
+		}
+		layer.addEventListener('pointerup', endSwipe);
+		layer.addEventListener('pointercancel', endSwipe);
 	},
 
 	reset : function() {
 		keys.left = false;
 		keys.right = false;
 		keys.accelerate = false;
+		keys.fire = false;
 		keys.up = false;
 		keys.down = false;
 	},
 	unbind : function() {
 		$(document).off('keydown');
 		$(document).off('keyup');
-		// Unbind touch events if necessary
-		$('.touch-btn').off('touchstart mousedown touchend mouseup mouseout');
 	},
 	handler : function(event, status) {
 		switch(event.keyCode) {
@@ -114,6 +166,9 @@ var keys = {
 			case 17://CTRL
 			case 65://A
 				keys.accelerate = status;
+				break;
+			case 16://SHIFT (fire, kept separate from run)
+				keys.fire = status;
 				break;
 			case 40://DOWN ARROW
 				keys.down = status;
@@ -135,6 +190,7 @@ var keys = {
 		return false;
 	},
 	accelerate : false,
+	fire : false,
 	left : false,
 	up : false,
 	right : false,

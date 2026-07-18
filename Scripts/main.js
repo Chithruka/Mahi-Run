@@ -1236,7 +1236,7 @@ var Mario = Hero.extend({
 			if(this.onground && keys.up)
 				this.jump();
 				
-			if(keys.accelerate && this.marioState === mario_states.fire)
+			if(keys.fire && this.marioState === mario_states.fire)
 				this.shoot();
 				
 			if(keys.right || keys.left)
