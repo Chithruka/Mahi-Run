@@ -25,10 +25,6 @@
     </div>
 </div>
 </div>
-<audio id="bg-music" loop>
-    <source src="Content/audio/overworld.wav" type="audio/mpeg">
-    Your browser does not support the audio element.
-</audio>
 <div id="sfx-container" style="display:none;">
     <audio id="sfx-jump" src="audio/jump.wav"></audio>
     <audio id="sfx-coin" src="audio/coin.wav"></audio>
@@ -49,35 +45,6 @@
             }
         }
     };
-</script>
-<script>
-    // This script waits for the first user interaction to start audio
-    // This fixes the "Autoplay Policy" issues on Chrome and Mobile
-    var music = document.getElementById('bg-music');
-    var audioStarted = false;
-
-    function startAudio() {
-        if (!audioStarted) {
-            // Try to play the music
-            music.volume = 0.5; // Set volume to 50%
-            music.play().then(function() {
-                console.log("Audio started successfully");
-                audioStarted = true;
-                
-                // Remove the listeners so this only runs once
-                document.removeEventListener('keydown', startAudio);
-                document.removeEventListener('touchstart', startAudio);
-                document.removeEventListener('click', startAudio);
-            }).catch(function(error) {
-                console.log("Audio play failed (will try again on next input):", error);
-            });
-        }
-    }
-
-    // Listen for any key, click, or touch to start the music
-    document.addEventListener('keydown', startAudio);
-    document.addEventListener('touchstart', startAudio);
-    document.addEventListener('click', startAudio);
 </script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 <script>window.jQuery || document.write('<script src="Scripts/jQuery.js"><\/script>')</script>
