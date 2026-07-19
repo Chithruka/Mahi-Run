@@ -23,24 +23,45 @@ var keys = {
 	// Binds one on-screen button to one keys.* flag using Pointer Events,
 	// which cover touch, mouse, and stylus in one go and support
 	// setPointerCapture so a dragging thumb doesn't lose the button.
+	// Press sets the flag true immediately; release (wherever it happens,
+	// even off the button) sets it false, so holding fires continuously
+	// and lifting the finger stops it right away.
 	bindButton : function(elId, keyName) {
 		var el = document.getElementById(elId);
 		if (!el) return;
 
-		el.addEventListener('pointerdown', function(e) {
+		var activePointerId = null;
+
+		function press(e) {
 			e.preventDefault();
+			activePointerId = e.pointerId;
 			keys[keyName] = true;
+
 			if (el.setPointerCapture) {
 				try { el.setPointerCapture(e.pointerId); } catch (err) {}
 			}
-		});
-		el.addEventListener('pointerup', function(e) {
-			e.preventDefault();
+		}
+
+		function release(e) {
+			// Ignore releases from an unrelated pointer (e.g. a second finger)
+			if (activePointerId !== null && e.pointerId !== undefined && e.pointerId !== activePointerId)
+				return;
+
+			activePointerId = null;
 			keys[keyName] = false;
-		});
-		el.addEventListener('pointercancel', function(e) {
-			keys[keyName] = false;
-		});
+		}
+
+		el.addEventListener('pointerdown', press);
+		el.addEventListener('pointerup', release);
+		el.addEventListener('pointercancel', release);
+		el.addEventListener('lostpointercapture', release);
+
+		// Safety net: on some mobile browsers a captured pointer's release
+		// can fail to reach the element itself. Listening on window as well
+		// guarantees the flag always gets cleared when the finger lifts.
+		window.addEventListener('pointerup', release);
+		window.addEventListener('pointercancel', release);
+
 		el.addEventListener('contextmenu', function(e) {
 			e.preventDefault();
 		});

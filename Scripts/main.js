@@ -1212,7 +1212,7 @@ var Mario = Hero.extend({
 	},
 	setMarioState: function(state) {
 		this.marioState = state;
-		$('#btn-fire').toggle(state === mario_states.fire);
+		$('#btn-fire').toggleClass('visible', state === mario_states.fire);
 	},
 	setState: function(state) {
 		if(state !== this.state) {
