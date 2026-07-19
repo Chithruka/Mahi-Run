@@ -1212,6 +1212,7 @@ var Mario = Hero.extend({
 	},
 	setMarioState: function(state) {
 		this.marioState = state;
+		$('#btn-fire').toggle(state === mario_states.fire);
 	},
 	setState: function(state) {
 		if(state !== this.state) {
@@ -1221,8 +1222,11 @@ var Mario = Hero.extend({
 	},
 	setPosition: function(x, y) {
 		this._super(x, y);
-		var r = this.level.width - 640;
-		var w = (this.x <= 210) ? 0 : ((this.x >= this.level.width - 230) ? r : r / (this.level.width - 440) * (this.x - 210));		
+		var half = constants.viewport_width / 2;
+		var leftThreshold = half - 110;
+		var rightThreshold = half - 90;
+		var r = this.level.width - constants.viewport_width;
+		var w = (this.x <= leftThreshold) ? 0 : ((this.x >= this.level.width - rightThreshold) ? r : r / (this.level.width - leftThreshold - rightThreshold) * (this.x - leftThreshold));		
 		this.level.setParallax(w);
 
 		if(this.onground && this.x >= this.level.width - 128)
@@ -1899,8 +1903,15 @@ var PipePlant = Plant.extend({
 $(document).ready(function() {
 	var level = new Level('world');
 	level.load(definedLevels[0]);
-	level.start();
-	keys.bind();
+
+	$('#btn-play').on('click', function() {
+		$('#start-screen').fadeOut(200, function() {
+			$(this).remove();
+		});
+
+		level.start();
+		keys.bind();
+	});
 });
 
 

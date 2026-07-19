@@ -50,6 +50,7 @@ var images = {
 	peach   : BASEPATH + 'mario-peach.png',
 };
 var constants = {
+	viewport_width  : 854, // must match #game width in style.css (16:9 aspect ratio)
 	interval        : 20,
 	bounce          : 15,
 	cooldown        : 20,
